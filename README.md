@@ -1,3 +1,3 @@
-h1 Shishcov Viacheslav
+Shishcov Viacheslav
 ================================
-h2 Group 153504
+Group 153504

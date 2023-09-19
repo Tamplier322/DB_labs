@@ -1,0 +1,53 @@
+1.Authorization and authentication:
+Users must be able to create an account with a login, password and other required data.
+Users must log in using their credentials.
+The system must provide secure storage and transmission of credentials.
+
+2.User management:
+Administrators must have access to user account management (CRUD operations: create, read, update, delete).
+Users should be able to change their personal data (eg name, password).
+Administrators can assign and remove roles to users.
+
+3. Role system:
+The system must support different user roles such as administrator, employee and general user.
+Roles should define the level of access to various system functions.
+Administrators can assign roles to users.
+
+4.Logging user actions:
+The system must maintain a log of user and administrator activities, including logging in, changing data, placing orders, and other actions.
+The log should contain information about the date and time of the event, the user who performed the action, and the action itself.
+
+5.Item management:
+Administrators must have access to product management (CRUD operations).
+Products must have unique identifiers, name, description, price, category and manufacturer.
+Products must be available for viewing and purchase by ordinary users.
+
+6.Placement of orders:
+Users should be able to add items to cart and checkout.
+Orders must contain information about the selected items, quantity, total cost and order status.
+Users should receive notifications about the status of their orders.
+
+7.Promotional codes and discounts:
+The system must support the use of promotional codes and discounts when placing orders.
+Promotional codes can provide percentage discounts or fixed amounts.
+Administrators must have access to manage promotional codes.
+
+8. Reviews and ratings:
+Users should be able to leave reviews of products and give ratings.
+Reviews must contain text and a rating.
+Other users can read reviews and see product ratings.
+
+9.Product filtering:
+Users should have access to functionality to filter products based on various parameters such as category, manufacturer, price, etc.
+
+10.Cart:
+Registered users must have access to a shopping cart where they can add and remove items before placing an order.
+The cart must be persisted between sessions for registered users.
+
+11. Manufacturer management:
+Administrators must have access to producer management (CRUD operations).
+Manufacturers must have unique identifiers, name and country of manufacture.
+
+12.Product category management:
+Administrators must have access to product category management (CRUD operations).
+Product categories must have unique identifiers and names.

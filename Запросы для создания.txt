@@ -1,0 +1,246 @@
+CREATE DATABASE "OnlineStore"
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'Russian_Russia.1251'
+    LC_CTYPE = 'Russian_Russia.1251'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1
+    IS_TEMPLATE = False;
+
+CREATE TABLE "MyUser" (
+    ID SERIAL PRIMARY KEY,
+    Login CHAR(50),
+    Password CHAR(50),
+    Name CHAR(50),
+    Role CHAR(50)
+);
+
+CREATE TABLE Category (
+    ID SERIAL PRIMARY KEY,
+    Name CHAR(50)
+);
+
+CREATE TABLE Manufacturer (
+    ID SERIAL PRIMARY KEY,
+    Name CHAR(50),
+    Country CHAR(50)
+);
+
+CREATE TABLE Product (
+    ID SERIAL PRIMARY KEY,
+    Name CHAR(50),
+    Description TEXT,
+    Price DECIMAL(10, 2),
+    ManufacturerID INT,
+    CategoryID INT,
+    FOREIGN KEY (ManufacturerID) REFERENCES Manufacturer(ID),
+    FOREIGN KEY (CategoryID) REFERENCES Category(ID)
+);
+
+CREATE TABLE Cart (
+    ID SERIAL PRIMARY KEY,
+    UserID INT,
+    FOREIGN KEY (UserID) REFERENCES MyUser(ID)
+);
+
+CREATE TABLE "Order" (
+    ID SERIAL PRIMARY KEY,
+    OrderDate TIMESTAMP,
+    Status CHAR(50),
+    CartID INT,
+    UserID INT,
+    FOREIGN KEY (CartID) REFERENCES Cart(ID),
+    FOREIGN KEY (UserID) REFERENCES MyUser(ID)
+);
+
+CREATE TABLE OrderItem (
+    ID SERIAL PRIMARY KEY,
+    Quantity INT,
+    OrderID INT,
+    ProductID INT,
+    FOREIGN KEY (OrderID) REFERENCES "Order"(ID),
+    FOREIGN KEY (ProductID) REFERENCES Product(ID)
+);
+
+CREATE TABLE AdminLog (
+    ID SERIAL PRIMARY KEY,
+    Action CHAR(50),
+    DateTime TIMESTAMP,
+    UserID INT,
+    FOREIGN KEY (UserID) REFERENCES MyUser(ID)
+);
+
+CREATE TABLE Review (
+    ID SERIAL PRIMARY KEY,
+    Text VARCHAR(255),
+    Rating INT,
+    ProductID INT,
+    UserID INT,
+    FOREIGN KEY (ProductID) REFERENCES Product(ID),
+    FOREIGN KEY (UserID) REFERENCES MyUser(ID)
+);
+
+CREATE TABLE PromoCode (
+    ID SERIAL PRIMARY KEY,
+    Code CHAR(50),
+    Discount DECIMAL(10, 2),
+    IsActive BOOLEAN,
+    IsOneTimeUse BOOLEAN,
+    OrderID INT,
+    FOREIGN KEY (OrderID) REFERENCES "Order"(ID)
+);
+
+CREATE TABLE Employee (
+    ID SERIAL PRIMARY KEY,
+    Name CHAR(50),
+    Surname CHAR(50), 
+	Post CHAR(50),
+	Salary CHAR(50),
+	UserID INT,
+	FOREIGN KEY (UserID) REFERENCES MyUser(ID)
+);
+
+
+Накладываю ограничения:
+1. Добавление уникального индекса для логинов пользователей
+CREATE UNIQUE INDEX idx_unique_login ON "myuser" (Login);
+
+2. Добавление проверки целостности для положительных цен
+ALTER TABLE Product
+ADD CONSTRAINT chk_positive_price CHECK (Price > 0);
+
+
+Написание некоторых триггеров:
+1. Триггер для обновления статуса заказа при добавлении или изменении элементов заказа:
+CREATE OR REPLACE FUNCTION update_order_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE "Order"
+    SET Status = 'В процессе'
+    WHERE ID = NEW.OrderID;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_order_status_trigger
+BEFORE INSERT OR UPDATE
+ON OrderItem
+FOR EACH ROW
+EXECUTE FUNCTION update_order_status();
+
+
+2.Триггер для автоматического изменения статуса заказа при создании нового заказа:
+CREATE OR REPLACE FUNCTION set_order_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.Status = 'Новый';
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_order_status_trigger
+BEFORE INSERT
+ON "Order"
+FOR EACH ROW
+EXECUTE FUNCTION set_order_status();
+
+
+3. Триггер для автоматического установления даты и времени действия администраторского журнала:
+CREATE OR REPLACE FUNCTION set_adminlog_datetime()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.DateTime = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_adminlog_datetime_trigger
+BEFORE INSERT
+ON AdminLog
+FOR EACH ROW
+EXECUTE FUNCTION set_adminlog_datetime();
+
+
+4. Триггер для автоматического вычисления стоимости и добавления ее в поле totalprice в таблице orderitem при добавлении новых элементов заказа.
+CREATE OR REPLACE FUNCTION calculate_order_item_total_price()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.TotalPrice = (SELECT Price * NEW.Quantity FROM Product WHERE Product.ID = NEW.ProductID);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER calculate_order_item_total_price_trigger
+BEFORE INSERT
+ON OrderItem
+FOR EACH ROW
+EXECUTE FUNCTION calculate_order_item_total_price();
+
+
+5. Триггер для автоматического обновления поля totalcost в таблице order при добавлении нового элемента заказа
+CREATE OR REPLACE FUNCTION update_order_total_cost()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE "Order"
+    SET TotalCost = TotalCost + NEW.TotalPrice
+    WHERE "Order".ID = NEW.OrderID;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_order_total_cost_trigger
+BEFORE INSERT
+ON OrderItem
+FOR EACH ROW
+EXECUTE FUNCTION update_order_total_cost();
+
+
+Теперь запросы для заполнения таблиц данными:
+INSERT INTO "User" (Login, Password, Name, Role) VALUES
+    ('user1', 'password1', 'John Doe', 'Customer'),
+    ('user2', 'password2', 'Jane Smith', 'Customer'),
+    ('admin1', 'adminpass1', 'Admin User', 'Administrator');
+
+INSERT INTO Category (Name) VALUES
+    ('Refrigerators'),
+    ('Washing Machines'),
+    ('Televisions');
+
+INSERT INTO Manufacturer (Name, Country) VALUES
+    ('Samsung', 'South Korea'),
+    ('LG', 'South Korea'),
+    ('Sony', 'Japan');
+
+INSERT INTO Product (Name, Description, Price, ManufacturerID, CategoryID) VALUES
+    ('Samsung Refrigerator', 'Large refrigerator with multiple compartments.', 599.99, 1, 1),
+    ('LG Washing Machine', 'Front-loading washing machine with various cycles.', 449.99, 2, 2),
+    ('Sony 4K TV', '55-inch 4K Ultra HD Smart LED TV.', 799.99, 3, 3);
+
+INSERT INTO Cart (UserID) VALUES
+    (1),
+    (2);
+
+INSERT INTO "Order" (OrderDate, Status, CartID, UserID) VALUES
+    ('2023-10-01 14:30:00', 'Pending', 1, 1),
+    ('2023-10-02 15:45:00', 'Completed', 2, 2);
+
+INSERT INTO OrderItem (Quantity, OrderID, ProductID) VALUES
+    (2, 1, 1),
+    (1, 2, 2);
+
+INSERT INTO AdminLog (Action, DateTime, UserID) VALUES
+    ('Login', '2023-10-01 14:00:00', 3),
+    ('Viewed Reports', '2023-10-02 15:00:00', 3);
+
+INSERT INTO Review (Text, Rating, ProductID, UserID) VALUES
+    ('Great product!', 5, 1, 1),
+    ('Good washing machine.', 4, 2, 2);
+
+INSERT INTO PromoCode (Code, Discount, IsActive, IsOneTimeUse, OrderID) VALUES
+    ('PROMO123', 10.00, true, false, 1),
+    ('PROMO456', 15.00, true, false, 2);
+
+INSERT INTO Employee (Name, Surname, Post, Salary, UserID) VALUES
+    ('John', 'Doe', 'Sales Representative', '50000', 3),
+    ('Jane', 'Smith', 'Customer Support', '45000', 3);

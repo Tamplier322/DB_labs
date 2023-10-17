@@ -1,0 +1,135 @@
+Добавление новых пользователей работников:
+INSERT INTO "User" (Login, Password, Name, Role)
+VALUES
+    ('employee1', 'password1', 'John Employee', 'Employee'),
+    ('employee2', 'password2', 'Jane Employee', 'Employee');
+
+INSERT INTO Employee (Name, Surname, Post, Salary, UserID)
+VALUES
+    ('John', 'Employee1', 'Sales Representative', '50000', 1),
+    ('Jane', 'Employee2', 'Customer Support', '45000', 2);
+
+INSERT INTO AdminLog (Action, DateTime, UserID)
+VALUES
+    ('Added employee John Employee', NOW(), 1),
+    ('Added employee Jane Employee', NOW(), 2);
+
+
+
+Изменение роли администратора в таблице работников:
+UPDATE Employee
+SET Post = 'Administrator'
+WHERE UserID IN (SELECT ID FROM "User" WHERE Role = 'Administrator');
+
+
+
+
+Проверка работы триггеров:
+
+1. Проверка работы триггера update_order_status_trigger:
+
+INSERT INTO OrderItem (Quantity, OrderID, ProductID) VALUES (2, 1, 1);
+SELECT Status FROM "Order" WHERE ID = 1;
+
+2. Проверка триггера set_order_status_trigger
+
+INSERT INTO "Order" (OrderDate, CartID, UserID) VALUES (NOW(), 1, 1);
+SELECT Status FROM "Order" WHERE ID = 2;
+
+3. Проверка триггера set_adminlog_datetime_trigger
+
+INSERT INTO AdminLog (Action, UserID) VALUES ('Действие администратора', 1);
+SELECT DateTime FROM AdminLog WHERE ID = 2;
+
+4. Проверка триггера calculate_order_item_total_price_trigger:
+
+INSERT INTO OrderItem (Quantity, OrderID, ProductID)
+VALUES (10, 2, 1); 
+
+
+Накладывание ограничений на БД:
+1. Добавление уникального индекса для логинов пользователей
+CREATE UNIQUE INDEX idx_unique_login ON myuser (Login);
+
+2. Добавление проверки целостности для положительных цен
+ALTER TABLE Product
+ADD CONSTRAINT chk_positive_price CHECK (Price > 0);
+
+
+Пул запросов:
+
+Вставка нового пользователя в таблицу MyUser
+INSERT INTO MyUser (Login, Password, Name, Role) VALUES ('user1', 'password123', 'John Doe', 'Customer');
+
+Изменение роли пользователя с ID 1
+UPDATE MyUser SET Role = 'Admin' WHERE ID = 1;
+
+Удаление категории товара с ID 3
+DELETE FROM Category WHERE ID = 3;
+
+Выборка всех товаров с ценой выше 1000
+SELECT * FROM Product WHERE Price > 1000;
+
+Выборка всех товаров, отсортированных по имени в алфавитном порядке
+SELECT * FROM Product ORDER BY Name;
+
+Выборка первых 5 заказов
+SELECT * FROM "Order" LIMIT 5;
+
+Подсчет количества активных промокодов
+SELECT COUNT(*) FROM PromoCode WHERE IsActive = true;
+
+Подсчет средней цены товаров в каждой категории
+SELECT CategoryID, AVG(Price) FROM Product GROUP BY CategoryID;
+
+Поиск товаров, содержащих слово "Samsung" в названии
+SELECT * FROM Product WHERE Name ILIKE '%Samsung%';
+
+Выборка имени пользователя и статуса заказа, объединяя таблицы MyUser и "Order"
+SELECT MyUser.Name, "Order".Status FROM MyUser
+INNER JOIN "Order" ON MyUser.ID = "Order".UserID;
+
+Выборка пользователей, у которых есть отзывы
+SELECT * FROM MyUser WHERE ID IN (SELECT DISTINCT UserID FROM Review);
+
+Создание новой таблицы "Supplier" с полями
+CREATE TABLE Supplier (
+    ID SERIAL PRIMARY KEY,
+    Name CHAR(50),
+    Address TEXT
+);
+
+Добавление поля "Email" в таблицу MyUser
+ALTER TABLE MyUser ADD COLUMN Email CHAR(100);
+
+Удаление таблицы "Supplier"
+DROP TABLE IF EXISTS Supplier;
+
+Добавление новой категории товаров:
+INSERT INTO OrderItem (Quantity, ProductID)
+VALUES (3, 1); 
+
+Обновление информации о пользователе:
+UPDATE MyUser
+SET Name = 'Новое имя'
+WHERE ID = 1;
+
+Поиск всех активных промокодов:
+SELECT * FROM PromoCode
+WHERE IsActive = TRUE;
+
+Поиск отзывов с рейтингом 5:
+SELECT * FROM Review
+WHERE Rating = 5;
+
+Удаление продукта по его ID:
+DELETE FROM Product
+WHERE ID = 3;
+
+Поиск всех сотрудников, занимающих определенную должность:
+SELECT * FROM Employee
+WHERE Post = 'Менеджер';
+
+Удаление промокода по его коду:
+DELETE FROM PromoCode
+WHERE Code = 'SUMMER20';
